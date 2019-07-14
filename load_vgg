@@ -1,0 +1,23 @@
+# For the content loss
+feature_extractor = Vgg19()                               ##定义的模型
+#feature_extractor = FeatureExtractor(torchvision.models.vgg19(pretrained=True)) 
+cnn = torchvision.models.vgg19(pretrained=True)          ##预训练好的模型
+p_cnn = cnn.state_dict()                                 ##获取网络参数
+p_newcnn = feature_extractor.state_dict()       
+
+name = []                                               ##获取名字，用于更改，原因自己定义的网络名字和预训练好的网络名字不一致
+for k,v in p_newcnn.items():
+    name.append(k)
+
+load_net_clean = {}                                    
+for k in name:          ##重构一个字典，因为没办法改变原来的key
+    load_net_clean[k] = 0    ##初始化
+load_net = load_net_clean
+
+for k,v in p_cnn.items():                              ##赋值
+    if name == [] :
+        break
+    load_net[name[0]] = p_cnn[k]
+    name.remove(name[0])                              #将已经赋值的名字去掉
+
+feature_extractor.load_state_dict(load_net)           ##加载参数
