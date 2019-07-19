@@ -1,0 +1,90 @@
+"""
+以下是python程序，preprocess.py
+"""
+
+import matlab.engine
+import os
+
+count = 0
+j = 1
+eng = matlab.engine.start_matlab()                         
+root_path1 = '/home/weijian/ESRGAN-PyTorch/data/dataset_mix (copy)'  ##HR图像的地址
+for file in os.listdir(root_path1): 
+	if count == 30:                                                   ##30张分一个文件夹，因为都放在同一文件夹打开查看图像会卡
+		count = 0 
+		j += 1                                                          ##文件夹名字
+	count += 1
+	
+	path1 ='/home/weijian/dataset/dataset_mix/'+str(j)+'/LR'         ##LR图片地址
+	if not os.path.exists(path1):
+		os.makedirs(path1)
+		print(path1+"创建成功")
+	path2 ='/home/weijian/dataset/dataset_mix/'+str(j)+'/HR'        ##HR图片地址
+	if not os.path.exists(path2):
+		os.makedirs(path2)
+		print(path2+"创建成功")
+	file_fullname = root_path1 + '/' +file
+	print(file_fullname)
+	a = eng.preprocess(j,file_fullname,file)
+  
+  
+  %{
+  以下为matlab程序，preprocess.m
+  %}
+  %% preprocess: 图像预处理：裁剪翻转旋转
+
+function [LR,HR]= preprocess(j,path,file)
+    img = imread(path);
+    [H,W,Z] = size(img);
+    num_H = floor(H / 128);   %%H可以切多少个，一张图片切多少块
+    num_W = floor(W / 128);
+    rang_H = H - 128;       %%就是裁剪的随机点的位置范围
+    rang_W = W - 128;
+    for x = 1 : num_H
+        for y = 1 : num_W
+            a = rng('shuffle');       %随机种子控制随机数
+            rand_H = round(rand(1,1)*rang_H)+1;    %%生产H的随机数，范围为0～H-128
+            rand_W = round(rand(1,1)*rang_W)+1;
+            flip = rand() > 0.5;              %%翻转概率
+            rot = rand() > 0.5;               %%旋转概率
+            
+            HR = imcrop(img,[rand_W,rand_H,127,127]);              %%已经裁剪好的图像HR，大小128x128 
+            
+            if flip
+                HR = horizontal_flip(HR);
+            end          
+            if rot
+                HR = imrotate(HR,-90);
+            end
+            
+            LR = imresize(HR,0.25);
+            %imwrite(LR,strcat('./LR/',file));
+            %imwrite(HR,strcat('./HR/',file));
+            imwrite(LR,strcat('./dataset_mix/',int2str(j),'/LR/', int2str((x-1)*num_W + y),'_' ,file));
+            imwrite(HR,strcat('./dataset_mix/',int2str(j),'/HR/', int2str((x-1)*num_W + y),'_' ,file));
+        end
+    end
+    
+end
+
+
+function output = horizontal_flip(input)
+[H,W,Z] = size(input); % 获取图像大小，H为垂直方向768点，W为水平方向1024点
+I=im2double(input);%将图像类型转换成双精度
+output = ones(H,W,Z); % 构造结果矩阵。每个像素点默认初始化为1（白色）
+tras = [1 0 0; 0 -1 W; 0 0 1]; % 水平镜像的变换矩阵 
+for x0 = 1 : H%第1行到第768行
+    for y0 = 1 : W%第1列到第1024列
+        temp = [x0; y0; 1];%将每一点的位置进行缓存，1行1列，1行2列···1行1024列
+        temp = tras * temp; % 根据算法进行，矩阵乘法：转换矩阵乘以原像素位置
+        x1 = temp(1, 1);%新的像素x1位置，也就是新的行位置（从1~768）
+        y1 = temp(2, 1);%新的像素y1位置,也就是新的列位置（从1~1024）
+                           % 变换后的位置判断是否越界
+        if (x1 <= H) & (y1 <= W) & (x1 >= 1) & (y1 >= 1)%新的行位置要小于新的列位置
+            output(x1,y1,:)= I(x0,y0,:);%进行图像颜色赋值
+        end
+    end
+end
+end
+
+%%%以上做法只是先对图像处理，再调用，而不是一边运行代码一边调用，解决了python调用matlab双三次插值核下采样的效率问题。
