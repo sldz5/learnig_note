@@ -55,3 +55,8 @@ function LR= preprocess()
     LR = imresize(img.Y,0.25);              %%当然，这里只进行了缩放，裁剪翻转和旋转在python里面进行就行了
 end
 
+
+%{
+参考：1.https://blog.csdn.net/google19890102/article/details/45672305
+    2.https://www.jianshu.com/p/4e9b06ce3f40
+%}
