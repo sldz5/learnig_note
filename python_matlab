@@ -1,0 +1,57 @@
+'''
+下面代码为python代码，preprocess.py
+'''
+import cv2
+import numpy as np
+
+#import torchvision.transforms as transforms       
+import matlab.engine                         ##用来打开matlab。注意！！这句话必须放在import torch或import torchvision之前，否则报错
+import torch
+from PIL import Image
+import os
+import scipy.io as io                        ##用来将矩阵保存为mat格式
+
+#img = cv2.imread('comic.png')
+#img = cv2.cvtColor(img, cv2.COLOR_BGR2YCR_CB)
+img = Image.open('comic.png')         #另一种方式打开图片
+
+img = img.convert('YCbCr')                 #转化灰度图
+
+Y,Cb,Cr = img.split()                     #分离三通道
+Y = np.array(Y)                           #之所以分为3个通道，因为没办法直接将3维的图像转成矩阵。会丢失信息导致颜色上的失真
+Cb= np.array(Cb)
+Cr= np.array(Cr)
+
+io.savemat('comic.mat',{'Y':Y,'Cb':Cb,'Cr':Cr})           ##Cb，Cr传不传都无所谓，因为Y通道的信息对超分最有用
+
+"""
+img = np.array(img).tolist()           #下面注释代码就是直接将3维矩阵进行压缩传到matlab，会失真
+#print(img.shape)
+img = matlab.uint8(img)               ##转为matlab识别的格式
+eng = matlab.engine.start_matlab()     ##开启matlab通道
+b = eng.preprocess(img)                   ##preprocess.m文件。注意！！该matlab文件有两个返回值，但是只能得到一个，[a,b]这样写会报错，未解决！
+b = np.array(b)                        ##转到numpy.ndarray格式
+b = b.astype(np.uint8)                 ##这句和下面一句主要是转为PIL格式图像，然后保存起来
+b = Image.fromarray(b)
+print(b.size)
+b.save('./cubic_comic.png')
+"""
+
+##下面3行都是python下面双三次的尝试
+#res = cv2.resize(img,None,fx=0.5,fy=0.5,interpolation = cv2.INTER_CUBIC)   
+#res = transforms.Scale((180,128))(img)
+#cv2.imwrite('cubic_comic.png',res)
+
+eng = matlab.engine.start_matlab()     ##开启matlab通道
+LR = eng.preprocess()         ##没办法返回两个值，所以只要了LR
+LR = np.array(LR)
+
+
+%{
+以下代码为matlab代码，preprocess.m
+%}
+function LR= preprocess()       
+    img = load('comic.mat');
+    LR = imresize(img.Y,0.25);              %%当然，这里只进行了缩放，裁剪翻转和旋转在python里面进行就行了
+end
+
