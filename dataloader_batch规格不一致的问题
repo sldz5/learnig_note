@@ -1,0 +1,37 @@
+File "train.py", line 236, in <module>
+    for i, (HR,LR) in enumerate(dataloader):
+  File "/home/weijian/.local/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 637, in __next__
+    return self._process_next_batch(batch)
+  File "/home/weijian/.local/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 658, in _process_next_batch
+    raise batch.exc_type(batch.exc_msg)
+RuntimeError: Traceback (most recent call last):
+  File "/home/weijian/.local/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 138, in _worker_loop
+    samples = collate_fn([dataset[i] for i in batch_indices])
+  File "/home/weijian/.local/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 232, in default_collate
+    return [default_collate(samples) for samples in transposed]
+  File "/home/weijian/.local/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 232, in <listcomp>
+    return [default_collate(samples) for samples in transposed]
+  File "/home/weijian/.local/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 209, in default_collate
+    return torch.stack(batch, 0, out=out)
+RuntimeError: invalid argument 0: Sizes of tensors must match except in dimension 0. Got 128 and 127 in dimension 2 at /pytorch/aten/src/TH/generic/THTensorMoreMath.cpp:1307
+
+出现上面的问题，说明dataloader的batch的图像大小不匹配造成的，因为数据集过大，因此用以下代码检测数据中哪些图像大小不一致，找到并删除。
+import os
+from PIL import Image
+import numpy as np
+from torchvision.transforms import ToTensor
+i = 1                ###从第一个文件夹开始
+while i !=153:       ##到153个文件夹结束
+	root_path1 = '/home/weijian/ESRGAN-PyTorch/data/data_DFO/'+ str(i) +'/HR'
+	for file in os.listdir(root_path1):
+		file_fullname = root_path1 + '/' +file
+		img  = Image.open(file_fullname)
+		img  = np.array(img)
+		img = ToTensor()(img)        ##我dataset.py 代码中这样处理，因此我也这样处理然后看图像大小
+		if (img.shape[1] != 128 or img.shape[2] != 128):
+			print(file)
+	i += 1
+	print(i)
+  
+ 
+ 不足：这不是自动化删除图像，可以加多一句话去自动删除不合规格的图像。
