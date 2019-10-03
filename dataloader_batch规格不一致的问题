@@ -27,13 +27,20 @@ while i !=153:       ##到153个文件夹结束
 		file_fullname = root_path1 + '/' +file
 		img  = Image.open(file_fullname)
 		img  = np.array(img)
-		img = ToTensor()(img)        ##我dataset.py 代码中这样处理，因此我也这样处理然后看图像大小
-		if (img.shape[1] != 128 or img.shape[2] != 128):
+		if (img.shape[1] != 128):
 			print(file)
+			os.remove(file_fullname)    ##把错误的图像移除
+			os.remove('/home/weijian/ESRGAN-PyTorch/data/data_DFO_512-128/'+ str(i) +'/HR/'+file)
+			continue
+		if (img.shape[0] != 128):
+			os.remove(file_fullname)
+			os.remove('/home/weijian/ESRGAN-PyTorch/data/data_DFO_512-128/'+ str(i) +'/HR/'+file)
+			print(file)
+			continue
 	i += 1
 	print(i)
   
  
- 不足：这不是自动化删除图像，可以加多一句话去自动删除不合规格的图像。
+ 不足：这不是自动化删除图像，可以加多一句话去自动删除不合规格的图像。（2019.10.3更改解决）
  
  解决了learning_note/Got 128 and 127 in dimension 3上的问题。
