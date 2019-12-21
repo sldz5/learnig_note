@@ -5,7 +5,9 @@ import cv2
 import numpy as np
 
 #import torchvision.transforms as transforms       
-import matlab.engine                         ##用来打开matlab。注意！！这句话必须放在import torch或import torchvision之前，否则报错
+import matlab.engine                         ##用来打开matlab。注意！！这句话必须放在import torch或import torchvision之前，否则报错(terminate called after throwing an instance of 'std:bad_alloc'
+                                                                                                                          ##    what() : std:bad_alloc
+                                                                                                                          ##    Aborted (core dumped)
 import torch
 from PIL import Image
 import os
